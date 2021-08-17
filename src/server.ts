@@ -13,7 +13,10 @@ app.get("/*" , (req, res)=> res.redirect("/"));
 
 const handleListen = () => console.log(`Listening on http://localhost:3000`)
 
-const handleConnect = (socket:WebSocket) => console.log(socket)
+const handleConnect = (socket:WebSocket) => {
+    socket.on("close", ()=>console.log("Disconnected from Browser"))
+    socket.send("hello!!")
+}
 
 const httpServer = http.createServer(app);
 const wsServer = new WebSocket.Server({ server : httpServer });
