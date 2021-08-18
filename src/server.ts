@@ -10,12 +10,25 @@ app.use('/public', express.static(__dirname + "/public"));
 app.get("/" , (req, res)=> res.render("home"));
 app.get("/*" , (req, res)=> res.redirect("/"));
 
+const sockets:WebSocket[] = [];
 
 const handleListen = () => console.log(`Listening on http://localhost:3000`)
 
 const handleConnect = (socket:WebSocket) => {
-    socket.on("close", ()=>console.log("Disconnected from Browser"))
-    socket.send("hello!!")
+    sockets.push(socket)
+
+    socket.on("close", ()=>{
+        console.log("Disconnected from Browser")
+    });
+
+    socket.on("message", (msg)=>{
+        console.log(msg);
+        sockets.forEach((aSocket)=>{
+            aSocket.send(msg)
+        })
+    })
+
+
 }
 
 const httpServer = http.createServer(app);
