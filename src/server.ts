@@ -27,12 +27,15 @@ const wsServer = (SocketIO as any)(httpServer);
 
 
 wsServer.on("connection", (socket:any)=>{
-    socket.on("enter_room", (msg:any, done:any) => {
-        console.log(msg);
-        setTimeout(()=>{
-            done();
-        },3000);
+    socket.onAny((ev:any) => {
+        console.log(`Event : ${ev}`);
     })
+
+    socket.on("enter_room", (roomName:string, joinRoom:()=>any) => {
+        socket.join(roomName);
+        joinRoom();
+        socket.to(roomName).emit("welcome");
+    });
 });
 
 
