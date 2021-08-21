@@ -27,6 +27,7 @@ const wsServer = (SocketIO as any)(httpServer);
 
 
 wsServer.on("connection", (socket:any)=>{
+    socket["nickname"] = "Anonymous";
     socket.onAny((ev:any) => {
         console.log(`Event : ${ev}`);
     })
@@ -34,18 +35,20 @@ wsServer.on("connection", (socket:any)=>{
     socket.on("enter_room", (roomName:string, joinRoom:()=>any) => {
         socket.join(roomName);
         joinRoom();
-        socket.to(roomName).emit("welcome");
+        socket.to(roomName).emit("welcome", socket.nickname);
     });
     socket.on("disconnecting", () => {
         socket.rooms.forEach( (room:any) => {
-            socket.to(room).emit("bye");
+            socket.to(room).emit("bye", socket.nickname);
         });
     });
     socket.on("new_message", (msg:string, roomName:string, done:()=>any) => {
-        socket.to(roomName).emit("new_message", msg);
+        socket.to(roomName).emit("new_message", `${socket["nickname"]} : ${msg}`);
         done();
     });
-
+    socket.on("nickname", (nickName:string) => {
+        socket["nickname"] = nickName;
+    });
 });
 
 httpServer.listen(3000, handleListen);
