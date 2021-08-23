@@ -2,7 +2,8 @@ import { Socket } from "dgram";
 import express from "express";
 import http from "http";
 //import WebSocket from "ws";
-import SocketIO from "socket.io";
+import {Server} from "socket.io";
+import {instrument} from "@socket.io/admin-ui"
 
 const app = express();
 
@@ -23,7 +24,15 @@ const socketList:LooseObject[] = [];
 const handleListen = () => console.log(`Listening on http://localhost:3000`)
 
 const httpServer = http.createServer(app);
-const wsServer = (SocketIO as any)(httpServer);
+const wsServer = new Server(httpServer, {
+    cors: {
+        origin: ["https://admin.socket.io"],
+        credentials: true,
+    },
+});
+    instrument(wsServer, {
+    auth: false,
+});
 
 
 function getPublicRooms(){
@@ -39,7 +48,7 @@ function getPublicRooms(){
 }
 
 function countJoiner(roomName:string):number{
-    return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+    return wsServer.sockets.adapter.rooms.get(roomName)?.size||0;
 }
 
 wsServer.on("connection", (socket:any)=>{
