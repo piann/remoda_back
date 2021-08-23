@@ -26,6 +26,22 @@ const httpServer = http.createServer(app);
 const wsServer = (SocketIO as any)(httpServer);
 
 
+function getPublicRooms(){
+    const {sockets:{adapter:{sids,rooms}}} = wsServer;
+    const publicRooms:any[] = [];
+    rooms.forEach((_:any,key:string)=>{
+        if(sids.get(key) === undefined){
+            publicRooms.push(key);
+        }
+    }
+    )
+    return publicRooms;
+}
+
+function countJoiner(roomName:string):number{
+    return wsServer.sockets.adapter.rooms.get(roomName)?.size;
+}
+
 wsServer.on("connection", (socket:any)=>{
     socket["nickname"] = "Anonymous";
     socket.onAny((ev:any) => {
@@ -35,13 +51,19 @@ wsServer.on("connection", (socket:any)=>{
     socket.on("enter_room", (roomName:string, joinRoom:()=>any) => {
         socket.join(roomName);
         joinRoom();
-        socket.to(roomName).emit("welcome", socket.nickname);
+        socket.to(roomName).emit("welcome", socket.nickname, countJoiner(roomName));
+        wsServer.sockets.emit("room_change", getPublicRooms());
     });
     socket.on("disconnecting", () => {
         socket.rooms.forEach( (room:any) => {
-            socket.to(room).emit("bye", socket.nickname);
+            socket.to(room).emit("bye", socket.nickname, countJoiner(room)-1);
         });
     });
+    socket.on("disconnect", () => {
+        wsServer.sockets.emit("room_change", getPublicRooms());
+    });
+
+
     socket.on("new_message", (msg:string, roomName:string, done:()=>any) => {
         socket.to(roomName).emit("new_message", `${socket["nickname"]} : ${msg}`);
         done();
